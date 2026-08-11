@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Extractor Pro</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+    .header { text-align: center; padding: 20px 0; }
+    .icon { font-size: 48px; margin-bottom: 12px; }
+    h1 {
+      font-size: 2.2rem; font-weight: 700;
+      background: linear-gradient(90deg, #6366f1, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .subtitle { color: #94a3b8; font-size: 1rem; line-height: 1.5; }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 28px;
+      backdrop-filter: blur(10px);
+    }
+
+    .section-title {
+      font-size: 0.8rem; font-weight: 600; color: #c4b5fd;
+      margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    .dropzone {
+      border: 2px dashed rgba(99,102,241,0.5); border-radius: 12px;
+      padding: 40px 20px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s; background: rgba(99,102,241,0.05);
+    }
+    .dropzone:hover { border-color: rgba(99,102,241,0.9); }
+    .dropzone-icon { font-size: 32px; margin-bottom: 12px; }
+    .dropzone-text { font-size: 1rem; color: #e2e8f0; margin-bottom: 4px; }
+    .dropzone-hint { font-size: 0.8rem; color: #64748b; }
+
+    .badge {
+      margin-top: 12px; display: inline-block;
+      background: rgba(16,185,129,0.15); color: #34d399;
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 8px; padding: 6px 14px; font-size: 0.875rem;
+    }
+
+    .btn {
+      width: 100%; padding: 16px; font-size: 1.05rem; font-weight: 600;
+      color: #fff; background: linear-gradient(90deg, #6366f1, #a855f7);
+      border: none; border-radius: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.1);
+      border-radius: 3px; overflow: hidden; display: none;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7);
+      border-radius: 3px; transition: width 0.4s ease; width: 0%;
+    }
+
+    .error-box {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5; border-radius: 10px; padding: 14px 18px;
+      font-size: 0.9rem; display: none;
+    }
+
+    .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+    .stat {
+      flex: 1; background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.2); border-radius: 10px;
+      padding: 16px; text-align: center; display: flex;
+      flex-direction: column; gap: 4px;
+    }
+    .stat-num { font-size: 1.8rem; font-weight: 700; color: #a78bfa; }
+    .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .download-row { display: flex; gap: 12px; margin-bottom: 24px; }
+    .dl-btn {
+      flex: 1; padding: 12px; font-size: 0.9rem; font-weight: 600;
+      color: #fff; background: linear-gradient(90deg, #6366f1, #a855f7);
+      border: none; border-radius: 10px; cursor: pointer;
+    }
+    .dl-btn-secondary {
+      background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3); color: #a78bfa;
+    }
+
+    .results-list { display: flex; flex-direction: column; gap: 12px; }
+    .result-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .result-domain { font-size: 0.9rem; font-weight: 600; color: #c4b5fd; }
+    .result-count {
+      font-size: 0.8rem; color: #6366f1;
+      background: rgba(99,102,241,0.15); padding: 2px 8px; border-radius: 6px;
+    }
+    .email-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .email-tag {
+      font-size: 0.78rem; color: #94a3b8;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 3px 8px; border-radius: 4px;
+    }
+    .result-error { font-size: 0.8rem; color: #f87171; margin-top: 6px; }
+
+    #results-card { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon">📧</div>
+      <h1>Email Extractor Pro</h1>
+      <p class="subtitle">Upload a list of websites and we'll deep-scrape every email from them.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title">1. Upload your website list</div>
+      <div class="dropzone" onclick="document.getElementById('file-input').click()">
+        <div class="dropzone-icon">📂</div>
+        <p class="dropzone-text" id="dropzone-text">Click to upload a .txt or .csv file</p>
+        <p class="dropzone-hint">One website URL per line</p>
+        <input type="file" id="file-input" accept=".txt,.csv" style="display:none" onchange="handleFile(event)" />
+      </div>
+      <div id="url-badge" class="badge" style="display:none"></div>
+    </div>
+
+    <button class="btn" id="scrape-btn" onclick="handleScrape()">
+      🚀 Start Extracting Emails
+    </button>
+
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <div class="card" id="results-card">
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-num" id="stat-emails">0</span>
+          <span class="stat-label">Unique Emails</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="stat-sites">0</span>
+          <span class="stat-label">Sites Scanned</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="stat-hits">0</span>
+          <span class="stat-label">Sites With Emails</span>
+        </div>
+      </div>
+
+      <div class="download-row">
+        <button class="dl-btn" onclick="downloadExcel()">📥 Download Excel</button>
+        <button class="dl-btn dl-btn-secondary" onclick="downloadCSV()">📄 Download CSV</button>
+      </div>
+
+      <div class="section-title">Results by Website</div>
+      <div class="results-list" id="results-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // Injected at build time by Vercel — fallback for local dev
+    const API_URL = (typeof window !== 'undefined' && window.__API_URL__) || 'https://email-extractor-backend-bdtn.onrender.com';
+
+    let urls = [];
+    let lastResults = null;
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+        urls = lines;
+        document.getElementById('dropzone-text').textContent = file.name;
+        const badge = document.getElementById('url-badge');
+        badge.textContent = `✅ ${lines.length} website${lines.length !== 1 ? 's' : ''} loaded`;
+        badge.style.display = 'inline-block';
+      };
+      reader.readAsText(file);
+      hideError();
+    }
+
+    function setProgress(pct) {
+      const bar = document.getElementById('progress-bar');
+      bar.style.display = 'block';
+      document.getElementById('progress-fill').style.width = pct + '%';
+    }
+
+    function hideError() {
+      document.getElementById('error-box').style.display = 'none';
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-box');
+      el.textContent = '⚠️ ' + msg;
+      el.style.display = 'block';
+    }
+
+    async function handleScrape() {
+      if (!urls.length) { showError('Please upload a .txt or .csv file with URLs first.'); return; }
+      hideError();
+      document.getElementById('results-card').style.display = 'none';
+      const btn = document.getElementById('scrape-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Extracting emails…';
+      setProgress(10);
+
+      try {
+        const resp = await fetch(`${API_URL}/api/scrape`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls }),
+        });
+        setProgress(90);
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.detail || 'Scraping failed — check backend logs.');
+        }
+        const data = await resp.json();
+        lastResults = data;
+        setProgress(100);
+        renderResults(data);
+      } catch (err) {
+        showError(err.message || 'An unexpected error occurred.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Start Extracting Emails';
+      }
+    }
+
+    function renderResults(data) {
+      document.getElementById('stat-emails').textContent = data.total_emails;
+      document.getElementById('stat-sites').textContent = data.results.length;
+      document.getElementById('stat-hits').textContent = data.results.filter(r => r.count > 0).length;
+
+      const list = document.getElementById('results-list');
+      list.innerHTML = data.results.map(r => `
+        <div class="result-item">
+          <div class="result-header">
+            <span class="result-domain">${r.domain}</span>
+            <span class="result-count">${r.count} emails</span>
+          </div>
+          ${r.emails.length ? `<div class="email-list">${r.emails.map(e => `<span class="email-tag">${e}</span>`).join('')}</div>` : ''}
+          ${r.error ? `<p class="result-error">Error: ${r.error}</p>` : ''}
+        </div>
+      `).join('');
+
+      document.getElementById('results-card').style.display = 'block';
+    }
+
+    function downloadExcel() {
+      if (!lastResults) return;
+      const rows = lastResults.all_emails.map(e => ({ Email: e }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Emails');
+      XLSX.writeFile(wb, 'Extracted_Emails.xlsx');
+    }
+
+    function downloadCSV() {
+      if (!lastResults) return;
+      const csv = 'Email\n' + lastResults.all_emails.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Extracted_Emails.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
